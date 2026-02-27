@@ -1,0 +1,7 @@
+# Python backend requirements for TradeWithMe platform
+fastapi==0.111.0
+uvicorn==0.29.0
+ccxt==4.3.4
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.4.2
