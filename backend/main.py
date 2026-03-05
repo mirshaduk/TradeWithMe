@@ -5,7 +5,7 @@ from typing import Optional
 import uvicorn
 import os
 from data_fetcher import get_historical_data
-from ai_engine import generate_suggestions
+from ai_engine import generate_suggestions, get_feature_importances
 from database import (
     init_db, get_balance, set_balance,
     get_positions, save_position, delete_position,
@@ -47,6 +47,12 @@ def get_market_data(symbol: str = "BTC/USDT", timeframe: str = "1d", limit: int 
 def get_ai_suggestions(symbol: str = "BTC/USDT"):
     suggestions = generate_suggestions(symbol)
     return {"status": "success", "data": suggestions}
+
+@app.get("/api/feature-importances")
+def get_importances():
+    """Returns the top features the AI uses to make decisions."""
+    importances = get_feature_importances()
+    return {"status": "success", "data": importances}
 
 # ─── Portfolio Persistence ─────────────────────────────────────────────────
 

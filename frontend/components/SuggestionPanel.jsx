@@ -60,62 +60,86 @@ export default function SuggestionPanel({ data, loading }) {
     };
 
     return (
-        <div className="p-6 flex-1 space-y-6 overflow-y-auto w-full">
-            <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                    <span className="text-textMuted flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                        Real-Time Analysis
-                    </span>
-                    <span className="text-xs text-textMuted font-mono">Live</span>
-                </div>
-                <div className="p-4 rounded-xl border border-border bg-surface/30 shadow-inner">
-                    <p className="text-sm leading-relaxed text-textMuted">{reason}</p>
-                </div>
+        <div className="p-4 flex-1 space-y-4 overflow-y-auto w-full">
+            {/* AI Reasoning */}
+            <div className="p-3 rounded-xl border border-border bg-surface/30 shadow-inner">
+                <p className="text-xs leading-relaxed text-textMuted">{reason}</p>
             </div>
 
             {/* Dynamic Signal Card */}
-            <div className={`p-5 rounded-xl border ${panelStyle} relative overflow-hidden group transition-all duration-500 shadow-lg`}>
-                {/* Neon Indicator Bar */}
+            <div className={`p-4 rounded-xl border ${panelStyle} relative overflow-hidden transition-all duration-500 shadow-lg`}>
                 <div className={`absolute top-0 left-0 w-1 h-full ${action === 'BUY' ? 'bg-buy shadow-[0_0_10px_#00e676]' : action === 'SELL' ? 'bg-sell shadow-[0_0_10px_#ff3d00]' : 'bg-textMuted'}`}></div>
 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
-                    <h4 className={`${titleStyle} font-bold text-lg tracking-wide`}>{titleText}</h4>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <div className="flex items-center gap-2">
+                        <h4 className={`${titleStyle} font-bold text-base tracking-wide`}>{titleText}</h4>
+                        {data.model_version && (
+                            <span className="text-[9px] font-mono text-primary border border-primary/30 rounded px-1.5 py-0.5 bg-primary/10">v{data.model_version}</span>
+                        )}
+                    </div>
                     <div className="flex gap-2">
-                        <span className="font-mono text-sm bg-surface px-2 py-1.5 rounded text-textMain border border-border shadow-inner">
-                            Confidence: <span className={confidence > 75 ? 'text-primary drop-shadow-md' : 'text-textMain'}>{confidence}%</span>
+                        <span className="font-mono text-xs bg-surface px-2 py-1.5 rounded text-textMain border border-border shadow-inner">
+                            Conf: <span className={confidence > 75 ? 'text-primary drop-shadow-md font-bold' : 'text-textMain'}>{confidence}%</span>
                         </span>
                         {action !== 'HOLD' && action !== 'EXIT' && (
-                            <button
-                                onClick={handleCopyTrade}
+                            <button onClick={handleCopyTrade}
                                 className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors border shadow-md
-                                    ${action === 'BUY' ? 'bg-buy/20 text-buy border-buy/40 hover:bg-buy hover:text-white' : 'bg-sell/20 text-sell border-sell/40 hover:bg-sell hover:text-white'}`}
-                            >
+                                    ${action === 'BUY' ? 'bg-buy/20 text-buy border-buy/40 hover:bg-buy hover:text-white' : 'bg-sell/20 text-sell border-sell/40 hover:bg-sell hover:text-white'}`}>
                                 Copy Trade
                             </button>
                         )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm bg-black/20 p-4 rounded-lg border border-white/5">
+                {/* Indicator Grid */}
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono bg-black/20 p-3 rounded-lg border border-white/5">
                     <div>
-                        <p className="text-textMuted text-[10px] uppercase tracking-wider mb-1">Current Price</p>
-                        <p className="font-mono text-lg">${current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}</p>
+                        <p className="text-textMuted text-[9px] uppercase tracking-wider mb-0.5">Mark Price</p>
+                        <p className="text-base">${current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}</p>
                     </div>
                     <div>
-                        <p className="text-textMuted text-[10px] uppercase tracking-wider mb-1">Action</p>
-                        <p className={`font-mono font-bold tracking-widest ${titleStyle}`}>{action}</p>
+                        <p className="text-textMuted text-[9px] uppercase tracking-wider mb-0.5">RSI (14)</p>
+                        <p className={`font-bold ${data.rsi > 70 ? 'text-sell' : data.rsi < 30 ? 'text-buy' : 'text-textMain'}`}>{data.rsi?.toFixed(1) || '—'}</p>
                     </div>
                     <div>
-                        <p className="text-textMuted text-[10px] uppercase tracking-wider mb-1">SMA (5 Period)</p>
-                        <p className="font-mono text-xs text-textMuted">${sma_5?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                        <p className="text-textMuted text-[9px] uppercase tracking-wider mb-0.5">Bollinger %</p>
+                        <p className={data.bb_pct > 0.8 ? 'text-sell' : data.bb_pct < 0.2 ? 'text-buy' : 'text-textMain'}>{data.bb_pct != null ? `${(data.bb_pct * 100).toFixed(1)}%` : '—'}</p>
                     </div>
                     <div>
-                        <p className="text-textMuted text-[10px] uppercase tracking-wider mb-1">SMA (20 Period)</p>
-                        <p className="font-mono text-xs text-textMuted">${sma_20?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                        <p className="text-textMuted text-[9px] uppercase tracking-wider mb-0.5">ATR Volatility</p>
+                        <p className="text-textMain">{data.atr != null ? `${(data.atr * 100).toFixed(2)}%` : '—'}</p>
+                    </div>
+                    <div>
+                        <p className="text-textMuted text-[9px] uppercase tracking-wider mb-0.5">SMA 5</p>
+                        <p className="text-textMuted">${sma_5?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                        <p className="text-textMuted text-[9px] uppercase tracking-wider mb-0.5">SMA 20</p>
+                        <p className="text-textMuted">${sma_20?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                     </div>
                 </div>
             </div>
+
+            {/* Feature Importance Bar Chart */}
+            {data.feature_importances && Object.keys(data.feature_importances).length > 0 && (
+                <div className="bg-surface/30 border border-border/50 rounded-xl p-3">
+                    <p className="text-[9px] uppercase tracking-widest text-textMuted mb-2 font-mono">Top AI Drivers</p>
+                    <div className="space-y-1.5">
+                        {Object.entries(data.feature_importances).map(([feat, val]) => (
+                            <div key={feat} className="flex items-center gap-2">
+                                <span className="text-[9px] text-textMuted font-mono w-20 truncate shrink-0">{feat}</span>
+                                <div className="flex-1 h-1.5 bg-background rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-700"
+                                        style={{ width: `${(val * 100 / (Object.values(data.feature_importances)[0] || 1)) * 100}%` }}
+                                    />
+                                </div>
+                                <span className="text-[9px] text-textMuted font-mono w-8 text-right">{(val * 100).toFixed(1)}%</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
