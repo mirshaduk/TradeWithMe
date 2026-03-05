@@ -132,7 +132,7 @@ export function TradeProvider({ children }) {
 
         const actualEntry = entryPrice || currentPrice;
         const newPosition = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             type,
             margin: parseFloat(margin),
             leverage: parseInt(leverage),

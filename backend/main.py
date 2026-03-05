@@ -242,5 +242,25 @@ def run_backtest_api(req: BacktestRequest):
     )
     return {"status": "success", "data": result}
 
+# ─── News Feed ────────────────────────────────────────────────────────────────
+
+from news_feed import get_news
+
+@app.get("/api/news")
+def news_endpoint(currencies: str = "BTC,ETH,SOL", limit: int = 20):
+    """Return latest crypto news headlines with sentiment scores."""
+    data = get_news(currencies=currencies, limit=limit)
+    return {"status": "success", "data": data}
+
+# ─── AI Feedback Status ───────────────────────────────────────────────────────
+
+@app.get("/api/feedback-status")
+def feedback_status():
+    """Returns the last feedback loop stats (how many trades were used in last retrain)."""
+    if os.path.exists(FEEDBACK_PATH):
+        with open(FEEDBACK_PATH) as f:
+            return {"status": "success", "data": json.load(f)}
+    return {"status": "success", "data": {"trades_used": 0, "bars_reweighted": 0}}
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

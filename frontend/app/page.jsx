@@ -1,5 +1,5 @@
 'use client';
-import { Activity, LayoutDashboard, Settings, TrendingUp, Bot, BotOff } from 'lucide-react';
+import { Activity, LayoutDashboard, Settings, TrendingUp, Bot, BotOff, BarChart2, FlaskConical } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { useTrade } from '../context/TradeContext';
@@ -7,6 +7,7 @@ import SuggestionPanel from '../components/SuggestionPanel';
 import TradeExecutionPanel from '../components/TradeExecutionPanel';
 import PortfolioWidget from '../components/PortfolioWidget';
 import AutoTrader from '../components/AutoTrader';
+import NewsPanel from '../components/NewsPanel';
 
 // ChartWidget must be dynamically imported (no SSR - it uses window/DOM)
 const ChartWidget = dynamic(() => import('../components/ChartWidget'), { ssr: false });
@@ -175,8 +176,8 @@ export default function Home() {
                                         AI Auto-Trader Log
                                     </h3>
                                     <span className={`text-[9px] font-mono px-2 py-0.5 rounded border ${autoTradeEnabled
-                                            ? 'text-primary border-primary/30 bg-primary/10'
-                                            : 'text-textMuted border-border bg-surface'
+                                        ? 'text-primary border-primary/30 bg-primary/10'
+                                        : 'text-textMuted border-border bg-surface'
                                         }`}>{autoTradeEnabled ? '● ACTIVE' : '○ PAUSED'}</span>
                                 </div>
                                 <div className="p-2 space-y-1 max-h-[140px] overflow-y-auto">
@@ -184,8 +185,8 @@ export default function Home() {
                                         <p className="text-xs text-textMuted text-center py-4">Waiting for AI signals...</p>
                                     ) : tradeLog.map((entry, i) => (
                                         <div key={i} className={`flex items-start gap-2 text-[10px] font-mono p-1.5 rounded ${entry.type === 'trade' ? 'bg-buy/5 text-buy' :
-                                                entry.type === 'error' ? 'bg-sell/5 text-sell' :
-                                                    'bg-surface/50 text-textMuted'
+                                            entry.type === 'error' ? 'bg-sell/5 text-sell' :
+                                                'bg-surface/50 text-textMuted'
                                             }`}>
                                             <span className="shrink-0 text-textMuted">{entry.time}</span>
                                             <span className="leading-tight">{entry.msg}</span>
@@ -203,12 +204,17 @@ export default function Home() {
                             </div>
 
                             {/* AI Suggestions Panel */}
-                            <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden border border-white/5 min-h-[400px]">
+                            <div className="glass-panel rounded-2xl flex flex-col overflow-hidden border border-white/5 min-h-[300px]">
                                 <div className="p-4 border-b border-border/50 bg-surface/80 flex items-center justify-between">
                                     <h3 className="font-semibold text-textMuted text-xs tracking-wide uppercase">AI Strategy Engine</h3>
-                                    <span className="text-[10px] font-mono text-primary border border-primary/30 rounded px-2 py-0.5 bg-primary/10">v3.0</span>
+                                    <span className="text-[10px] font-mono text-primary border border-primary/30 rounded px-2 py-0.5 bg-primary/10">v3.1 Feedback</span>
                                 </div>
                                 <SuggestionPanel data={aiAnalysis} loading={loading} />
+                            </div>
+
+                            {/* Crypto News Panel */}
+                            <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden border border-white/5 min-h-[300px]">
+                                <NewsPanel currencies="BTC,ETH,SOL" />
                             </div>
                         </div>
                     </div>

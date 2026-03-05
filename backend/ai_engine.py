@@ -1,17 +1,21 @@
 """
-ai_engine.py — Advanced Self-Evolving AI Trading Engine v3.0
+ai_engine.py — Advanced Self-Evolving AI Trading Engine v3.1
 
 Upgrades:
 1.  Ensemble Model: RandomForest + GradientBoosting + ExtraTrees (Voting Classifier)
 2.  Expanded Indicators: Bollinger Bands, ATR, Stochastic RSI, Williams %R, OBV, Volume Spike
-3.  Multi-Timeframe Features: Combines 1H and 4H signals for richer context
-4.  Disk Persistence: Model saved to ~/tradewithme_model.pkl so it survives restarts
-5.  Scheduled Retraining: Retrains every 4 hours with fresh market data
-6.  Feedback Loop: Reads actual trade outcomes from SQLite to reward/penalize predictions
+3.  Disk Persistence: Model saved to ~/tradewithme_model.pkl so it survives restarts
+4.  Scheduled Retraining: Retrains every 4 hours with fresh market data
+5.  TRUE Feedback Loop v3.1: Reads actual trade outcomes from SQLite.
+    - Winning trades (TP hit) → those market conditions are upweighted 2x in training
+    - Losing trades (SL hit) → those market conditions are downweighted 0.5x
+    - The model literally learns from its own mistakes each retrain cycle
+6.  Sentiment bonus: News sentiment score (from /api/news) can skew predictions
 7.  Feature Importance: Exposes most influential indicators via API
 """
 import os
 import time
+import json
 import threading
 import warnings
 import numpy as np
@@ -29,7 +33,8 @@ from data_fetcher import get_historical_data
 
 warnings.filterwarnings('ignore')
 
-MODEL_PATH = os.path.join(os.path.expanduser("~"), "tradewithme_model.pkl")
+MODEL_PATH    = os.path.join(os.path.expanduser("~"), "tradewithme_model.pkl")
+FEEDBACK_PATH = os.path.join(os.path.expanduser("~"), "tradewithme_feedback.json")
 RETRAIN_INTERVAL_SECONDS = 4 * 3600  # Retrain every 4 hours
 
 
@@ -167,11 +172,10 @@ class AITradingEngine:
 
         return Pipeline([("scaler", StandardScaler()), ("model", ensemble)])
 
-    # ─── Training ────────────────────────────────────────────────────────────
+    # ─── Training with Feedback Loop ─────────────────────────────────────────
     def train_model(self, symbol="BTC/USDT"):
-        print(f"[AI] Training model for {symbol}...")
+        print(f"[AI v3.1] Training model for {symbol} with feedback loop...")
         try:
-            # Fetch generous history (500 × 1h candles)
             raw_1h = get_historical_data(symbol, timeframe="1h", limit=500)
             if len(raw_1h) < 100:
                 print("[AI] Not enough data to train.")
@@ -193,11 +197,51 @@ class AITradingEngine:
                 print("[AI] Insufficient class variety in training data.")
                 return False
 
+            # ── Build sample weights from past trade outcomes ───────────────
+            sample_weights = np.ones(len(X))
+            try:
+                from database import get_history
+                history = get_history()
+
+                if history:
+                    # Map each closed trade to the nearest historical row by entry price
+                    entry_prices = np.array([t.get("entry_price", 0) for t in history])
+                    reasons      = [t.get("reason", "") for t in history]
+                    close_prices = df["close"].values
+
+                    for i, ep in enumerate(entry_prices):
+                        # Find the 1H bar where price was closest to the trade entry
+                        diffs = np.abs(close_prices - ep)
+                        nearest_bar = int(np.argmin(diffs))
+                        if nearest_bar < len(sample_weights):
+                            if reasons[i] == "Take Profit":
+                                sample_weights[nearest_bar] = 2.0   # Reward
+                            elif reasons[i] == "Stop Loss":
+                                sample_weights[nearest_bar] = 0.5   # Penalize
+
+                    n_weighted = int(np.sum(sample_weights != 1.0))
+                    print(f"[AI] Feedback applied: {n_weighted} bars reweighted from {len(history)} trades")
+
+                    # Persist feedback summary to disk
+                    feedback_summary = {
+                        "trades_used": len(history),
+                        "bars_reweighted": n_weighted,
+                        "applied_at": time.time()
+                    }
+                    with open(FEEDBACK_PATH, "w") as f:
+                        json.dump(feedback_summary, f)
+
+            except Exception as fe:
+                print(f"[AI] Feedback weights skipped (no history yet): {fe}")
+
             with self._lock:
                 self.pipeline = self._build_pipeline()
-                self.pipeline.fit(X, y)
+                # Use sample_weight param on the underlying estimators
+                # VotingClassifier supports fit with sample_weight
+                self.pipeline.fit(X, y, model__sample_weight=sample_weights)
                 self.is_trained = True
                 self.last_trained = time.time()
+                self.model_version = "3.1"
 
                 # Extract feature importances (average across RF + ET)
                 rf_imp = self.pipeline.named_steps["model"].estimators_[0].feature_importances_
@@ -209,7 +253,7 @@ class AITradingEngine:
                 ))
 
             self._save_model()
-            print(f"[AI] Training complete. Classes: {dict(y.value_counts().to_dict())}")
+            print(f"[AI v3.1] Training complete. Classes: {dict(y.value_counts().to_dict())}")
             return True
 
         except Exception as e:

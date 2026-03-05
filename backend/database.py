@@ -63,6 +63,18 @@ def init_db():
         )
     """)
 
+    # AI feedback weights (sample-level reweighting for next retrain)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS feedback_weights (
+            id INTEGER PRIMARY KEY,
+            feature_snapshot TEXT NOT NULL,
+            action TEXT NOT NULL,
+            outcome REAL NOT NULL,
+            weight REAL NOT NULL DEFAULT 1.0,
+            created_at TEXT NOT NULL
+        )
+    """)
+
     # Insert default portfolio if not exists
     cursor.execute("SELECT COUNT(*) FROM portfolio")
     if cursor.fetchone()[0] == 0:

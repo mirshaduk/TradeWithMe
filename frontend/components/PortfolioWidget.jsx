@@ -107,11 +107,11 @@ export default function PortfolioWidget() {
                         </div>
                     ) : (
                         <div className="divide-y divide-white/5 bg-background">
-                            {history.map(h => {
+                            {history.map((h, idx) => {
                                 const pnlClass = h.pnl >= 0 ? 'text-buy' : 'text-sell';
                                 const sign = h.pnl >= 0 ? '+' : '';
                                 return (
-                                    <div key={h.id} className="p-4 flex flex-col gap-2 opacity-70 hover:opacity-100 transition-opacity hover:bg-surface/30">
+                                    <div key={`${h.id}-${idx}`} className="p-4 flex flex-col gap-2 opacity-70 hover:opacity-100 transition-opacity hover:bg-surface/30">
                                         <div className="flex justify-between items-center text-xs">
                                             <span className={`font-bold border px-1.5 py-0.5 rounded text-[10px] ${h.type === 'LONG' ? 'text-buy border-buy/20' : 'text-sell border-sell/20'} bg-surface/50`}>
                                                 {h.type} {h.leverage}x
