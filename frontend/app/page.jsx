@@ -77,9 +77,9 @@ export default function Home() {
                 </div>
 
                 <nav className="flex-1 w-full space-y-2 px-3">
-                    <NavItem icon={<LayoutDashboard />} label="Dashboard" active />
-                    <NavItem icon={<Activity />} label="AI Markets" />
-                    <NavItem icon={<Settings />} label="Settings" />
+                    <NavItem icon={<LayoutDashboard />} label="Dashboard" href="/" active />
+                    <NavItem icon={<Activity />} label="AI Markets" href="/markets" />
+                    <NavItem icon={<Settings />} label="Settings" href="#" />
                 </nav>
             </aside>
 
@@ -168,9 +168,9 @@ export default function Home() {
     );
 }
 
-function NavItem({ icon, label, active = false }) {
+function NavItem({ icon, label, href = '#', active = false }) {
     return (
-        <a href="#" className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 group ${active ? 'bg-primary/10 text-primary font-medium border border-primary/20 shadow-inner' : 'text-textMuted border border-transparent hover:bg-white/5 hover:text-textMain hover:border-white/10'}`}>
+        <a href={href} className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 group ${active ? 'bg-primary/10 text-primary font-medium border border-primary/20 shadow-inner' : 'text-textMuted border border-transparent hover:bg-white/5 hover:text-textMain hover:border-white/10'}`}>
             <span className={`${active ? 'text-primary' : 'text-textMuted group-hover:text-textMain'}`}>{icon}</span>
             <span className="hidden lg:block text-sm">{label}</span>
         </a>

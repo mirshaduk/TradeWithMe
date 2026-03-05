@@ -54,6 +54,39 @@ def get_importances():
     importances = get_feature_importances()
     return {"status": "success", "data": importances}
 
+@app.get("/api/market-scan")
+def market_scan():
+    """
+    Scans multiple crypto symbols in parallel and returns AI signals for each.
+    Used by the AI Markets scanner page.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
+               "DOGE/USDT", "ADA/USDT", "AVAX/USDT"]
+
+    results = []
+
+    def scan_symbol(sym):
+        try:
+            data = generate_suggestions(sym)
+            data["symbol"] = sym
+            return data
+        except Exception as e:
+            return {"symbol": sym, "action": "HOLD", "confidence": 0,
+                    "reason": f"Error: {str(e)}", "current_price": 0}
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {executor.submit(scan_symbol, s): s for s in SYMBOLS}
+        for future in as_completed(futures):
+            results.append(future.result())
+
+    # Sort: BUY first, then SELL, then HOLD; highest confidence first within each
+    order = {"BUY": 0, "SELL": 1, "HOLD": 2}
+    results.sort(key=lambda x: (order.get(x.get("action", "HOLD"), 2), -x.get("confidence", 0)))
+
+    return {"status": "success", "data": results}
+
 # ─── Portfolio Persistence ─────────────────────────────────────────────────
 
 @app.get("/api/portfolio")
