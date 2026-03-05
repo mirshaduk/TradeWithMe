@@ -1,7 +1,16 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Notification } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const http = require('http');
+
+// ─── IPC: Desktop Notifications ─────────────────────────────────────────────
+// React renderer calls: window.electronAPI?.notify(title, body)
+ipcMain.on('notify', (_, { title, body }) => {
+    if (Notification.isSupported()) {
+        new Notification({ title, body, silent: false }).show();
+    }
+});
+
 
 let mainWindow = null;
 let backendProcess = null;
@@ -100,6 +109,7 @@ function createWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
         },
         titleBarStyle: 'hiddenInset', // Mac: native blurred titlebar
     });

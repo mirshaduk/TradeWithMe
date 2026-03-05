@@ -156,5 +156,91 @@ def add_history(entry: HistoryEntry):
     save_history_entry(entry.dict())
     return {"status": "success"}
 
+# ─── Performance Dashboard ─────────────────────────────────────────────────
+
+@app.get("/api/performance")
+def get_performance():
+    """Compute AI trading stats from the local trade history."""
+    from settings_manager import get_settings
+    trades = get_history()
+    if not trades:
+        return {"status": "success", "data": {"total_trades": 0}}
+
+    pnls    = [t["pnl"] for t in trades]
+    wins    = [p for p in pnls if p > 0]
+    losses  = [p for p in pnls if p <= 0]
+    tp_wins = [t for t in trades if t.get("reason") == "Take Profit"]
+    sl_hits = [t for t in trades if t.get("reason") == "Stop Loss"]
+
+    avg_win  = round(sum(wins) / len(wins), 2)   if wins   else 0
+    avg_loss = round(abs(sum(losses)/len(losses)),2) if losses else 0
+
+    # Build equity curve (running balance from $100k start)
+    equity = []
+    running = get_balance()  # current balance
+    for t in reversed(trades):  # history is newest-first
+        running -= t["pnl"]
+    for t in reversed(trades):
+        running += t["pnl"]
+        equity.append(round(running, 2))
+
+    best  = max(trades, key=lambda t: t["pnl"])
+    worst = min(trades, key=lambda t: t["pnl"])
+
+    return {
+        "status": "success",
+        "data": {
+            "total_trades":   len(trades),
+            "win_rate":       round(len(wins)/len(pnls)*100, 1),
+            "profit_factor":  round(sum(wins)/max(abs(sum(losses)),0.01), 2),
+            "total_pnl":      round(sum(pnls), 2),
+            "avg_win":        avg_win,
+            "avg_loss":       avg_loss,
+            "rr_ratio":       round(avg_win/max(avg_loss,0.01), 2),
+            "tp_count":       len(tp_wins),
+            "sl_count":       len(sl_hits),
+            "best_trade":     best,
+            "worst_trade":    worst,
+            "equity_curve":   equity,
+            "recent_trades":  list(reversed(trades))[:20],
+        }
+    }
+
+# ─── Settings ─────────────────────────────────────────────────────────────
+
+from settings_manager import get_settings, save_settings
+
+@app.get("/api/settings")
+def fetch_settings():
+    return {"status": "success", "data": get_settings()}
+
+@app.post("/api/settings")
+def update_settings(body: dict):
+    saved = save_settings(body)
+    return {"status": "success", "data": saved}
+
+# ─── Backtesting ──────────────────────────────────────────────────────────
+
+from backtester import run_backtest
+
+class BacktestRequest(BaseModel):
+    symbol:       str   = "BTC/USDT"
+    timeframe:    str   = "1h"
+    lookback:     int   = 500
+    tp_pct:       float = 1.5
+    sl_pct:       float = 0.8
+    leverage:     int   = 10
+    margin_pct:   float = 2.0
+    min_confidence: float = 60.0
+
+@app.post("/api/backtest")
+def run_backtest_api(req: BacktestRequest):
+    result = run_backtest(
+        symbol=req.symbol, timeframe=req.timeframe, lookback=req.lookback,
+        tp_pct=req.tp_pct, sl_pct=req.sl_pct, leverage=req.leverage,
+        margin_pct=req.margin_pct, min_confidence=req.min_confidence
+    )
+    return {"status": "success", "data": result}
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
