@@ -1,0 +1,61 @@
+{
+    "name": "tradewithme-desktop",
+    "version": "1.0.0",
+    "description": "TradeWithMe AI — Crypto Trading Desktop Terminal",
+    "main": "electron/main.js",
+    "private": true,
+    "scripts": {
+        "start": "electron .",
+        "dev": "electron .",
+        "build:win": "electron-builder --win",
+        "build:mac": "electron-builder --mac",
+        "build:linux": "electron-builder --linux"
+    },
+    "dependencies": {
+        "electron-squirrel-startup": "^1.0.0"
+    },
+    "devDependencies": {
+        "electron": "^34.0.0",
+        "electron-builder": "^25.1.8"
+    },
+    "build": {
+        "appId": "com.tradewithme.ai",
+        "productName": "TradeWithMe AI",
+        "copyright": "Copyright © 2025 TradeWithMe",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "electron/**/*",
+            "frontend/**/*",
+            "backend/**/*",
+            "!frontend/node_modules/**/*",
+            "!backend/venv/**/*",
+            "!backend/__pycache__/**/*"
+        ],
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "electron/icon.ico"
+        },
+        "mac": {
+            "target": [
+                "dmg"
+            ],
+            "icon": "electron/icon.icns"
+        },
+        "linux": {
+            "target": [
+                "AppImage"
+            ],
+            "icon": "electron/icon.png"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true
+        }
+    }
+}
